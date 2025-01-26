@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException
 from passlib.context import CryptContext
 from sqlalchemy import or_
@@ -6,6 +8,9 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Настройка логирования
+logger = logging.getLogger(__name__)
 
 
 def get_user_by_username(db: Session, username: str):
@@ -25,6 +30,7 @@ def create_user(db: Session, user: schemas.UserCreate):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    logger.info(f"User {db_user.username} created")
     return db_user
 
 
@@ -47,6 +53,7 @@ def create_author(db: Session, author: schemas.AuthorCreate):
     db.add(db_author)
     db.commit()
     db.refresh(db_author)
+    logger.info(f"Author {db_author.name} created")
     return db_author
 
 
@@ -69,6 +76,7 @@ def update_author(db: Session, author_id: int, author: schemas.AuthorUpdate):
         setattr(db_author, key, value)
     db.commit()
     db.refresh(db_author)
+    logger.info(f"Author {db_author.name} updated")
     return db_author
 
 
@@ -80,6 +88,7 @@ def delete_author(db: Session, author_id: int):
         raise HTTPException(status_code=404, detail="Author not found")
     db.delete(db_author)
     db.commit()
+    logger.info(f"Author with ID {author_id} deleted")
     return {"detail": "Author deleted"}
 
 
@@ -103,6 +112,7 @@ def create_book(db: Session, book: schemas.BookCreate):
     db.add(db_book)
     db.commit()
     db.refresh(db_book)
+    logger.info(f"Book {db_book.title} created")
     return db_book
 
 
@@ -121,6 +131,7 @@ def update_book(db: Session, book_id: int, book: schemas.BookUpdate):
         setattr(db_book, key, value)
     db.commit()
     db.refresh(db_book)
+    logger.info(f"Book {db_book.title} updated")
     return db_book
 
 
@@ -130,6 +141,7 @@ def delete_book(db: Session, book_id: int):
         raise HTTPException(status_code=404, detail="Book not found")
     db.delete(db_book)
     db.commit()
+    logger.info(f"Book with ID {book_id} deleted")
     return {"detail": "Book deleted"}
 
 
@@ -143,3 +155,41 @@ def get_books(db: Session, skip: int = 0, limit: int = 10, search: str = None):
             )
         )
     return query.offset(skip).limit(limit).all()
+
+
+# CRUD операции для выдачи книг
+def create_book_issue(db: Session, book_issue: schemas.BookIssueCreate):
+    db_book_issue = models.BookIssue(**book_issue.dict())
+    db.add(db_book_issue)
+    db.commit()
+    db.refresh(db_book_issue)
+    logger.info(
+        f"Book with ID {db_book_issue.book_id} issued to user with ID {db_book_issue.user_id}"
+    )
+    return db_book_issue
+
+
+def update_book_issue(
+    db: Session, book_issue_id: int, book_issue: schemas.BookIssueUpdate
+):
+    db_book_issue = (
+        db.query(models.BookIssue)
+        .filter(models.BookIssue.id == book_issue_id)
+        .first()
+    )
+    if not db_book_issue:
+        raise HTTPException(status_code=404, detail="Book issue not found")
+    if book_issue.return_date:
+        db_book_issue.return_date = book_issue.return_date
+    db.commit()
+    db.refresh(db_book_issue)
+    logger.info(f"Book issue with ID {book_issue_id} updated")
+    return db_book_issue
+
+
+def get_book_issues(db: Session, user_id: int):
+    return (
+        db.query(models.BookIssue)
+        .filter(models.BookIssue.user_id == user_id)
+        .all()
+    )
