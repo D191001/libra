@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
+# Убедитесь, что нет устаревшего синтаксиса Python 2
 from sqlalchemy.orm import Session
 
 from app import crud, models

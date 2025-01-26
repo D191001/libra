@@ -5,8 +5,14 @@ sqlalchemy
 databases
 psycopg2
 passlib
-python-jose
+python-jose==3.3.0
 fastapi-security
 python-multipart
 alembic
-psycopg2
+pytest
+pytest-asyncio
+httpx
+pydantic
+python-multipart
+python-jose
+passlib

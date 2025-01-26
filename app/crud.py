@@ -1,5 +1,3 @@
-import logging
-
 from fastapi import HTTPException
 from passlib.context import CryptContext
 from sqlalchemy import or_
@@ -10,6 +8,8 @@ from app import models, schemas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Настройка логирования
+import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,6 +45,20 @@ def authenticate_user(db: Session, username: str, password: str):
             status_code=401, detail="Incorrect username or password"
         )
     return user
+
+
+def update_user(db: Session, user_id: int, user: schemas.UserUpdate):
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.username:
+        db_user.username = user.username
+    if user.password:
+        db_user.hashed_password = pwd_context.hash(user.password)
+    db.commit()
+    db.refresh(db_user)
+    logger.info(f"User {db_user.username} updated")
+    return db_user
 
 
 # CRUD операции для авторов
