@@ -53,3 +53,15 @@ class Book(Base):
     author_id = Column(Integer, ForeignKey('authors.id'))
     author = relationship("Author")
     genres = relationship("Genre", secondary="book_genres")
+
+
+class BookIssue(Base):
+    __tablename__ = 'book_issues'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    book_id = Column(Integer, ForeignKey('books.id'))
+    issue_date = Column(Date)
+    return_date = Column(Date)
+    expected_return_date = Column(Date)
+    user = relationship("User")
+    book = relationship("Book")

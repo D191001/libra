@@ -21,6 +21,11 @@ class UserCreate(UserBase):
     password: str
 
 
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+
+
 class UserResponse(UserBase):
     id: int
     is_active: bool
@@ -69,6 +74,29 @@ class BookUpdate(BookBase):
 
 class BookResponse(BookBase):
     id: int
+
+    class Config:
+        orm_mode = True
+
+
+class BookIssueBase(BaseModel):
+    user_id: int
+    book_id: int
+    issue_date: date
+    expected_return_date: date
+
+
+class BookIssueCreate(BookIssueBase):
+    pass
+
+
+class BookIssueUpdate(BaseModel):
+    return_date: Optional[date] = None
+
+
+class BookIssueResponse(BookIssueBase):
+    id: int
+    return_date: Optional[date] = None
 
     class Config:
         orm_mode = True
