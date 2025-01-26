@@ -1,11 +1,13 @@
 # FastAPI Application
 
-## Установка зависимостей
+##
 
-## Изменение порта для запуска приложения
 
-Для изменения порта, на котором запускается приложение, можно использовать переменную окружения `PORT`. Например:
 
-## Изменение порта для PostgreSQL в Docker-контейнере
 
-Для изменения порта для PostgreSQL в Docker-контейнере, добавьте следующую строку в ваш `docker-compose.yml` файл:
+# Cоздание миграции
+
+docker-compose exec web alembic revision --autogenerate -m "Initial migration"
+
+# Применить миграции:
+docker-compose exec web alembic upgrade head

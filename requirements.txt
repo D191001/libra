@@ -8,3 +8,5 @@ passlib
 python-jose
 fastapi-security
 python-multipart
+alembic
+psycopg2
