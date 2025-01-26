@@ -1,6 +1,6 @@
-from datetime import date
-
+from fastapi import HTTPException
 from passlib.context import CryptContext
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -34,76 +34,99 @@ def authenticate_user(db: Session, username: str, password: str):
     return user
 
 
-def create_book_issue(db: Session, book_issue: schemas.BookIssueCreate):
-    # Проверка количества одновременно выдаваемых книг
-    active_issues = (
-        db.query(models.BookIssue)
-        .filter(
-            models.BookIssue.user_id == book_issue.user_id,
-            models.BookIssue.return_date == None,
-        )
-        .count()
-    )
-    if active_issues >= 5:
-        raise HTTPException(
-            status_code=400, detail="User already has 5 active book issues"
-        )
-
-    # Проверка доступных экземпляров книги
-    book = (
-        db.query(models.Book)
-        .filter(models.Book.id == book_issue.book_id)
-        .first()
-    )
-    if book.available_copies <= 0:
-        raise HTTPException(
-            status_code=400, detail="No available copies of the book"
-        )
-
-    # Создание записи о выдаче книги
-    db_book_issue = models.BookIssue(**book_issue.dict())
-    db.add(db_book_issue)
-
-    # Обновление количества доступных экземпляров книги
-    book.available_copies -= 1
+# CRUD операции для авторов
+def create_author(db: Session, author: schemas.AuthorCreate):
+    db_author = models.Author(**author.dict())
+    db.add(db_author)
     db.commit()
-    db.refresh(db_book_issue)
-    return db_book_issue
+    db.refresh(db_author)
+    return db_author
 
 
-def update_book_issue(
-    db: Session, book_issue_id: int, book_issue: schemas.BookIssueUpdate
-):
-    db_book_issue = (
-        db.query(models.BookIssue)
-        .filter(models.BookIssue.id == book_issue_id)
-        .first()
-    )
-    if db_book_issue is None:
-        raise HTTPException(status_code=404, detail="Book issue not found")
-
-    if book_issue.return_date:
-        db_book_issue.return_date = book_issue.return_date
-
-        # Обновление количества доступных экземпляров книги
-        book = (
-            db.query(models.Book)
-            .filter(models.Book.id == db_book_issue.book_id)
-            .first()
-        )
-        book.available_copies += 1
-
-    db.commit()
-    db.refresh(db_book_issue)
-    return db_book_issue
-
-
-def get_book_issues(db: Session, user_id: int):
+def get_author(db: Session, author_id: int):
     return (
-        db.query(models.BookIssue)
-        .filter(models.BookIssue.user_id == user_id)
-        .all()
+        db.query(models.Author).filter(models.Author.id == author_id).first()
     )
 
 
-# CRUD операции для авторов и книг остаются без изменений
+def update_author(db: Session, author_id: int, author: schemas.AuthorUpdate):
+    db_author = (
+        db.query(models.Author).filter(models.Author.id == author_id).first()
+    )
+    if db_author is None:
+        raise HTTPException(status_code=404, detail="Author not found")
+    for key, value in author.dict().items():
+        setattr(db_author, key, value)
+    db.commit()
+    db.refresh(db_author)
+    return db_author
+
+
+def delete_author(db: Session, author_id: int):
+    db_author = (
+        db.query(models.Author).filter(models.Author.id == author_id).first()
+    )
+    if db_author is None:
+        raise HTTPException(status_code=404, detail="Author not found")
+    db.delete(db_author)
+    db.commit()
+    return {"detail": "Author deleted"}
+
+
+def get_authors(
+    db: Session, skip: int = 0, limit: int = 10, search: str = None
+):
+    query = db.query(models.Author)
+    if search:
+        query = query.filter(
+            or_(
+                models.Author.name.ilike(f"%{search}%"),
+                models.Author.biography.ilike(f"%{search}%"),
+            )
+        )
+    return query.offset(skip).limit(limit).all()
+
+
+# CRUD операции для книг
+def create_book(db: Session, book: schemas.BookCreate):
+    db_book = models.Book(**book.dict())
+    db.add(db_book)
+    db.commit()
+    db.refresh(db_book)
+    return db_book
+
+
+def get_book(db: Session, book_id: int):
+    return db.query(models.Book).filter(models.Book.id == book_id).first()
+
+
+def update_book(db: Session, book_id: int, book: schemas.BookUpdate):
+    db_book = db.query(models.Book).filter(models.Book.id == book_id).first()
+    if db_book is None:
+        raise HTTPException(status_code=404, detail="Book not found")
+    for key, value in book.dict().items():
+        setattr(db_book, key, value)
+    db.commit()
+    db.refresh(db_book)
+    return db_book
+
+
+def delete_book(db: Session, book_id: int):
+    db_book = db.query(models.Book).filter(models.Book.id == book_id).first()
+    if db_book is None:
+        raise HTTPException(status_code=404, detail="Book not found")
+    db.delete(db_book)
+    db.commit()
+    return {"detail": "Book deleted"}
+
+
+def get_books(db: Session, skip: int = 0, limit: int = 10, search: str = None):
+    query = db.query(models.Book)
+    if search:
+        query = query.filter(
+            or_(
+                models.Book.title.ilike(f"%{search}%"),
+                models.Book.description.ilike(f"%{search}%"),
+            )
+        )
+    return query.offset(skip).limit(limit).all()

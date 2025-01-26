@@ -1,7 +1,7 @@
 import time
-from datetime import date, timedelta
+from datetime import timedelta
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -106,6 +106,16 @@ def delete_author(author_id: int, db: Session = Depends(get_db)):
     return crud.delete_author(db=db, author_id=author_id)
 
 
+@app.get("/authors/", response_model=list[schemas.AuthorResponse])
+def read_authors(
+    skip: int = 0,
+    limit: int = 10,
+    search: str = Query(None),
+    db: Session = Depends(get_db),
+):
+    return crud.get_authors(db=db, skip=skip, limit=limit, search=search)
+
+
 # CRUD операции для книг
 @app.post(
     "/books/",
@@ -135,6 +145,16 @@ def update_book(
 @app.delete("/books/{book_id}", dependencies=[Depends(get_current_admin_user)])
 def delete_book(book_id: int, db: Session = Depends(get_db)):
     return crud.delete_book(db=db, book_id=book_id)
+
+
+@app.get("/books/", response_model=list[schemas.BookResponse])
+def read_books(
+    skip: int = 0,
+    limit: int = 10,
+    search: str = Query(None),
+    db: Session = Depends(get_db),
+):
+    return crud.get_books(db=db, skip=skip, limit=limit, search=search)
 
 
 # Маршруты для выдачи книг
