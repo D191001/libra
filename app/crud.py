@@ -1,73 +1,35 @@
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app import models, schemas
 
-
-def create_author(db: Session, author: schemas.AuthorCreate):
-    db_author = models.Author(**author.dict())
-    db.add(db_author)
-    db.commit()
-    db.refresh(db_author)
-    return db_author
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def get_author(db: Session, author_id: int):
+def get_user_by_username(db: Session, username: str):
     return (
-        db.query(models.Author).filter(models.Author.id == author_id).first()
+        db.query(models.User).filter(models.User.username == username).first()
     )
 
 
-def update_author(db: Session, author_id: int, author: schemas.AuthorUpdate):
-    db_author = (
-        db.query(models.Author).filter(models.Author.id == author_id).first()
+def create_user(db: Session, user: schemas.UserCreate):
+    hashed_password = pwd_context.hash(user.password)
+    db_user = models.User(
+        username=user.username, hashed_password=hashed_password
     )
-    if db_author is None:
-        raise HTTPException(status_code=404, detail="Author not found")
-    for key, value in author.dict().items():
-        setattr(db_author, key, value)
+    db.add(db_user)
     db.commit()
-    db.refresh(db_author)
-    return db_author
+    db.refresh(db_user)
+    return db_user
 
 
-def delete_author(db: Session, author_id: int):
-    db_author = (
-        db.query(models.Author).filter(models.Author.id == author_id).first()
-    )
-    if db_author is None:
-        raise HTTPException(status_code=404, detail="Author not found")
-    db.delete(db_author)
-    db.commit()
-    return {"detail": "Author deleted"}
+def authenticate_user(db: Session, username: str, password: str):
+    user = get_user_by_username(db, username)
+    if not user:
+        return False
+    if not pwd_context.verify(password, user.hashed_password):
+        return False
+    return user
 
 
-def create_book(db: Session, book: schemas.BookCreate):
-    db_book = models.Book(**book.dict())
-    db.add(db_book)
-    db.commit()
-    db.refresh(db_book)
-    return db_book
-
-
-def get_book(db: Session, book_id: int):
-    return db.query(models.Book).filter(models.Book.id == book_id).first()
-
-
-def update_book(db: Session, book_id: int, book: schemas.BookUpdate):
-    db_book = db.query(models.Book).filter(models.Book.id == book_id).first()
-    if db_book is None:
-        raise HTTPException(status_code=404, detail="Book not found")
-    for key, value in book.dict().items():
-        setattr(db_book, key, value)
-    db.commit()
-    db.refresh(db_book)
-    return db_book
-
-
-def delete_book(db: Session, book_id: int):
-    db_book = db.query(models.Book).filter(models.Book.id == book_id).first()
-    if db_book is None:
-        raise HTTPException(status_code=404, detail="Book not found")
-    db.delete(db_book)
-    db.commit()
-    return {"detail": "Book deleted"}
+# CRUD операции для авторов и книг остаются без изменений

@@ -4,3 +4,7 @@ asyncpg
 sqlalchemy
 databases
 psycopg2
+passlib
+python-jose
+fastapi-security
+python-multipart
