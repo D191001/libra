@@ -9,9 +9,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def get_user_by_username(db: Session, username: str):
-    return (
+    user = (
         db.query(models.User).filter(models.User.username == username).first()
     )
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 
 def create_user(db: Session, user: schemas.UserCreate):
@@ -28,9 +31,13 @@ def create_user(db: Session, user: schemas.UserCreate):
 def authenticate_user(db: Session, username: str, password: str):
     user = get_user_by_username(db, username)
     if not user:
-        return False
+        raise HTTPException(
+            status_code=401, detail="Incorrect username or password"
+        )
     if not pwd_context.verify(password, user.hashed_password):
-        return False
+        raise HTTPException(
+            status_code=401, detail="Incorrect username or password"
+        )
     return user
 
 
@@ -44,16 +51,19 @@ def create_author(db: Session, author: schemas.AuthorCreate):
 
 
 def get_author(db: Session, author_id: int):
-    return (
+    author = (
         db.query(models.Author).filter(models.Author.id == author_id).first()
     )
+    if not author:
+        raise HTTPException(status_code=404, detail="Author not found")
+    return author
 
 
 def update_author(db: Session, author_id: int, author: schemas.AuthorUpdate):
     db_author = (
         db.query(models.Author).filter(models.Author.id == author_id).first()
     )
-    if db_author is None:
+    if not db_author:
         raise HTTPException(status_code=404, detail="Author not found")
     for key, value in author.dict().items():
         setattr(db_author, key, value)
@@ -66,7 +76,7 @@ def delete_author(db: Session, author_id: int):
     db_author = (
         db.query(models.Author).filter(models.Author.id == author_id).first()
     )
-    if db_author is None:
+    if not db_author:
         raise HTTPException(status_code=404, detail="Author not found")
     db.delete(db_author)
     db.commit()
@@ -97,12 +107,15 @@ def create_book(db: Session, book: schemas.BookCreate):
 
 
 def get_book(db: Session, book_id: int):
-    return db.query(models.Book).filter(models.Book.id == book_id).first()
+    book = db.query(models.Book).filter(models.Book.id == book_id).first()
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    return book
 
 
 def update_book(db: Session, book_id: int, book: schemas.BookUpdate):
     db_book = db.query(models.Book).filter(models.Book.id == book_id).first()
-    if db_book is None:
+    if not db_book:
         raise HTTPException(status_code=404, detail="Book not found")
     for key, value in book.dict().items():
         setattr(db_book, key, value)
@@ -113,7 +126,7 @@ def update_book(db: Session, book_id: int, book: schemas.BookUpdate):
 
 def delete_book(db: Session, book_id: int):
     db_book = db.query(models.Book).filter(models.Book.id == book_id).first()
-    if db_book is None:
+    if not db_book:
         raise HTTPException(status_code=404, detail="Book not found")
     db.delete(db_book)
     db.commit()
