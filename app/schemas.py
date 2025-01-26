@@ -17,8 +17,10 @@ class UserBase(BaseModel):
     username: str
 
 
-class UserCreate(UserBase):
+class UserCreate(BaseModel):
+    username: str
     password: str
+    is_admin: bool = False
 
 
 class UserUpdate(BaseModel):
@@ -64,6 +66,7 @@ class BookBase(BaseModel):
     author_id: int
 
 
+# Убедитесь, что нет устаревшего синтаксиса Python 2
 class BookCreate(BookBase):
     pass
 

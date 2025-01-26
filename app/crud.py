@@ -7,7 +7,6 @@ from app import models, schemas
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Настройка логирования
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,9 @@ def get_user_by_username(db: Session, username: str):
 def create_user(db: Session, user: schemas.UserCreate):
     hashed_password = pwd_context.hash(user.password)
     db_user = models.User(
-        username=user.username, hashed_password=hashed_password
+        username=user.username,
+        hashed_password=hashed_password,
+        is_admin=user.is_admin,
     )
     db.add(db_user)
     db.commit()
@@ -61,7 +62,6 @@ def update_user(db: Session, user_id: int, user: schemas.UserUpdate):
     return db_user
 
 
-# CRUD операции для авторов
 def create_author(db: Session, author: schemas.AuthorCreate):
     db_author = models.Author(**author.dict())
     db.add(db_author)
@@ -120,7 +120,6 @@ def get_authors(
     return query.offset(skip).limit(limit).all()
 
 
-# CRUD операции для книг
 def create_book(db: Session, book: schemas.BookCreate):
     db_book = models.Book(**book.dict())
     db.add(db_book)
@@ -171,7 +170,6 @@ def get_books(db: Session, skip: int = 0, limit: int = 10, search: str = None):
     return query.offset(skip).limit(limit).all()
 
 
-# CRUD операции для выдачи книг
 def create_book_issue(db: Session, book_issue: schemas.BookIssueCreate):
     db_book_issue = models.BookIssue(**book_issue.dict())
     db.add(db_book_issue)

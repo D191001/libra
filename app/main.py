@@ -16,7 +16,6 @@ from app.security import (
     get_db,
 )
 
-# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -57,6 +56,19 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 
+@app.post("/admin/users/", response_model=schemas.UserResponse)
+def create_admin_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_username(db, username=user.username)
+    if db_user:
+        raise HTTPException(
+            status_code=400, detail="Username already registered"
+        )
+    user.is_admin = True  # Установите флаг администратора
+    new_user = crud.create_user(db=db, user=user)
+    logger.info(f"Admin user {new_user.username} created")
+    return new_user
+
+
 @app.get("/users/me/", response_model=schemas.UserResponse)
 def read_users_me(
     current_user: models.User = Depends(get_current_active_user),
@@ -84,7 +96,6 @@ def read_users(db: Session = Depends(get_db)):
     return crud.get_users(db=db)
 
 
-# CRUD операции для авторов
 @app.post(
     "/authors/",
     response_model=schemas.AuthorResponse,
@@ -135,7 +146,6 @@ def read_authors(
     return crud.get_authors(db=db, skip=skip, limit=limit, search=search)
 
 
-# CRUD операции для книг
 @app.post(
     "/books/",
     response_model=schemas.BookResponse,
@@ -182,7 +192,6 @@ def read_books(
     return crud.get_books(db=db, skip=skip, limit=limit, search=search)
 
 
-# Маршруты для выдачи книг
 @app.post(
     "/book_issues/",
     response_model=schemas.BookIssueResponse,
